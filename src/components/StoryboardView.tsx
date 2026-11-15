@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   Film,
   Upload,
@@ -298,14 +298,21 @@ export function StoryboardView({ onNotify, onSendImageToBridge }: StoryboardView
                     <input
                       type="range"
                       min={0}
-                      max={Math.max(0.1, duration)}
-                      step={0.05}
-                      value={trimStart}
+                      max={Math.max(10, Math.round(duration * 20))}
+                      step={1}
+                      value={Math.round(trimStart * 20)}
+                      style={
+                        {
+                          '--slider-pct': `${duration > 0 ? Math.min(100, (trimStart / duration) * 100) : 0}%`,
+                        } as CSSProperties
+                      }
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onTouchStart={(e) => e.stopPropagation()}
                       onChange={(e) => {
-                        const val = Number(e.target.value);
+                        const val = Number(e.target.value) / 20;
                         setTrimStart(Math.min(val, Math.max(0, trimEnd - 0.1)));
                       }}
-                      className="forge-slider mt-1"
+                      className="forge-slider"
                     />
                   </div>
                   <div>
@@ -316,14 +323,21 @@ export function StoryboardView({ onNotify, onSendImageToBridge }: StoryboardView
                     <input
                       type="range"
                       min={0}
-                      max={Math.max(0.1, duration)}
-                      step={0.05}
-                      value={trimEnd}
+                      max={Math.max(10, Math.round(duration * 20))}
+                      step={1}
+                      value={Math.round(trimEnd * 20)}
+                      style={
+                        {
+                          '--slider-pct': `${duration > 0 ? Math.min(100, (trimEnd / duration) * 100) : 100}%`,
+                        } as CSSProperties
+                      }
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onTouchStart={(e) => e.stopPropagation()}
                       onChange={(e) => {
-                        const val = Number(e.target.value);
+                        const val = Number(e.target.value) / 20;
                         setTrimEnd(Math.max(val, Math.min(duration, trimStart + 0.1)));
                       }}
-                      className="forge-slider forge-slider-amber mt-1"
+                      className="forge-slider forge-slider-amber"
                     />
                   </div>
                 </div>
@@ -521,12 +535,19 @@ export function StoryboardView({ onNotify, onSendImageToBridge }: StoryboardView
                 </div>
                 <input
                   type="range"
-                  min={0.4}
-                  max={0.95}
-                  step={0.05}
-                  value={quality}
-                  onChange={(e) => setQuality(Number(e.target.value))}
-                  className="forge-slider forge-slider-amber mt-1.5"
+                  min={40}
+                  max={95}
+                  step={5}
+                  value={Math.round(quality * 100)}
+                  style={
+                    {
+                      '--slider-pct': `${((Math.round(quality * 100) - 40) / 55) * 100}%`,
+                    } as CSSProperties
+                  }
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onChange={(e) => setQuality(Number(e.target.value) / 100)}
+                  className="forge-slider forge-slider-amber"
                 />
               </div>
             </div>

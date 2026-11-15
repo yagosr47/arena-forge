@@ -175,7 +175,10 @@ function scheduleSfxGraph(ctx: BaseAudioContext, params: SfxParams, startTime: n
   const peakTime = startTime + safeAttack;
   const endTime = startTime + totalDuration;
   const clampedNoise = Math.min(1, Math.max(0, params.noiseMix));
-  const clampedVolume = Math.min(1, Math.max(0.01, params.volume));
+  const clampedVolume = Math.min(1, Math.max(0, params.volume));
+  if (clampedVolume <= 0.0005) {
+    return totalDuration;
+  }
 
   // Master lowpass filter + master envelope
   const filter = ctx.createBiquadFilter();

@@ -79,6 +79,9 @@ describe('MOD-01A: sfxSynthesizer', () => {
     const preview = computeWaveformPreview(SFX_PRESETS[0], 128);
     expect(preview).toHaveLength(128);
     expect(preview.every((v) => v >= -1 && v <= 1)).toBe(true);
+
+    const muted = computeWaveformPreview({ ...SFX_PRESETS[0], volume: 0 }, 64);
+    expect(muted.every((v) => v === 0)).toBe(true);
   });
 });
 
@@ -206,11 +209,13 @@ describe('MOD-03: contextBuilder & snippetVault', () => {
     expect(titles).toContain('PointerEvent');
     expect(titles).toContain('WebBluetooth');
     expect(titles).toContain('100dvh');
+    expect(titles).toContain('Stack 3D');
+    expect(titles).toContain('Stack 2D');
 
     const backup = await exportArenaForgeBackupJson();
     expect(backup).toContain('arena-forge-backup-v1');
     const imported = await importArenaForgeBackupJson(backup, 'merge');
-    expect(imported.importedSnippets).toBeGreaterThanOrEqual(6);
+    expect(imported.importedSnippets).toBeGreaterThanOrEqual(8);
   });
 });
 
