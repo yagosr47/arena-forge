@@ -65,6 +65,7 @@ for (let frame = 0; frame < 360; frame += 1) {
   if (grounded && time > 3) vy = 0;
 
   physics.setPlayerVelocity(vx, vy, vz);
+  lobby.preStep(time);
   physics.step(dt);
 
   const pos = physics.getPlayerPosition();

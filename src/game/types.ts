@@ -30,13 +30,14 @@ export interface QualityPreset {
   pixelRatio: number;
   shadows: boolean;
   particles: boolean;
+  shadowMapSize: number;
 }
 
 export const QUALITY_PRESETS: Record<QualityLevel, QualityPreset> = {
-  low: { pixelRatio: 0.6, shadows: false, particles: false },
-  medium: { pixelRatio: 1.0, shadows: true, particles: true },
-  high: { pixelRatio: 1.5, shadows: true, particles: true },
-  ultra: { pixelRatio: 2.0, shadows: true, particles: true },
+  low: { pixelRatio: 0.6, shadows: false, particles: false, shadowMapSize: 512 },
+  medium: { pixelRatio: 1.0, shadows: true, particles: true, shadowMapSize: 1024 },
+  high: { pixelRatio: 1.5, shadows: true, particles: true, shadowMapSize: 2048 },
+  ultra: { pixelRatio: 2.0, shadows: true, particles: true, shadowMapSize: 4096 },
 };
 
 export const QUALITY_LABELS: Record<QualityLevel, string> = {
@@ -66,8 +67,8 @@ export const PLAYER_TUNING = {
   walkSpeed: 4.4,
   sprintSpeed: 7.6,
   acceleration: 14,
-  jumpSpeed: 9.2,
-  gravity: 24,
+  jumpSpeed: 9.8,
+  gravity: 26,
   coyoteTime: 0.12,
   jumpBuffer: 0.15,
 };
