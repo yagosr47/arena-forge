@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  --color-void: #06090e;
-  --color-chassis: #0c1118;
-  --color-panel: #111923;
-  --color-surface: #172230;
+  --color-void: #05080f;
+  --color-chassis: #0a0f18;
+  --color-panel: #101826;
+  --color-surface: #172233;
   --color-gridline: #1f2e40;
   --color-cyan-signal: #22d3ee;
   --color-amber-forge: #f59e0b;
@@ -21,6 +21,8 @@
     --safe-right: env(safe-area-inset-right, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-left: env(safe-area-inset-left, 0px);
+    --hud-scale: 1;
+    --hud-opacity: 0.85;
   }
 
   html,
@@ -31,131 +33,76 @@
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background-color: #06090e;
+    background-color: #05080f;
     color: #e6edf6;
     font-family: var(--font-sans);
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+  }
+
+  canvas {
+    display: block;
+    outline: none;
   }
 }
 
-/* Blueprint subtle background grid */
-.bg-tactical-grid {
-  background-image:
-    linear-gradient(to right, rgba(34, 211, 238, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(34, 211, 238, 0.045) 1px, transparent 1px);
-  background-size: 20px 20px;
+@layer components {
+  .glass-panel {
+    background: linear-gradient(160deg, rgba(16, 24, 38, 0.92), rgba(8, 13, 22, 0.94));
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(34, 211, 238, 0.16);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .hud-button {
+    transform: scale(var(--hud-scale));
+    opacity: var(--hud-opacity);
+    transition: transform 120ms ease, opacity 120ms ease, background-color 120ms ease,
+      border-color 120ms ease, color 120ms ease;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .hud-button:active {
+    transform: scale(calc(var(--hud-scale) * 0.92));
+  }
+
+  .range-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(34, 211, 238, 0.75), rgba(34, 211, 238, 0.2));
+    outline: none;
+  }
+
+  .range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: #22d3ee;
+    border: 2px solid #06202a;
+    box-shadow: 0 0 12px rgba(34, 211, 238, 0.7);
+    cursor: pointer;
+  }
+
+  .range-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: #22d3ee;
+    border: 2px solid #06202a;
+    box-shadow: 0 0 12px rgba(34, 211, 238, 0.7);
+    cursor: pointer;
+  }
 }
 
-/* Transparency checkerboard for sprite previews */
-.bg-checkerboard {
-  background-color: #0b1017;
-  background-image:
-    linear-gradient(45deg, #15202e 25%, transparent 25%),
-    linear-gradient(-45deg, #15202e 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #15202e 75%),
-    linear-gradient(-45deg, transparent 75%, #15202e 75%);
-  background-size: 16px 16px;
-  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
-}
-
-/* Crisp custom tactical sliders */
-input[type="range"].forge-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  background: #172230;
-  border: 1px solid #24364b;
-  outline: none;
-  cursor: pointer;
-}
-
-input[type="range"].forge-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 2px;
-  background: #22d3ee;
-  border: 2px solid #06090e;
-  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.65), 0 0 10px rgba(34, 211, 238, 0.35);
-  transition: transform 0.1s ease, background-color 0.15s ease;
-}
-
-input[type="range"].forge-slider::-webkit-slider-thumb:hover,
-input[type="range"].forge-slider::-webkit-slider-thumb:active {
-  transform: scale(1.12);
-  background: #67e8f9;
-}
-
-input[type="range"].forge-slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 2px;
-  background: #22d3ee;
-  border: 2px solid #06090e;
-  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.65);
-}
-
-input[type="range"].forge-slider-amber::-webkit-slider-thumb {
-  background: #f59e0b;
-  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.65), 0 0 10px rgba(245, 158, 11, 0.35);
-}
-
-input[type="range"].forge-slider-amber::-moz-range-thumb {
-  background: #f59e0b;
-  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.65);
-}
-
-/* Custom slim scrollbars */
-.forge-scroll {
+@utility scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: #25384f #090e15;
-}
-
-.forge-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.forge-scroll::-webkit-scrollbar-track {
-  background: #090e15;
-}
-
-.forge-scroll::-webkit-scrollbar-thumb {
-  background: #25384f;
-  border-radius: 3px;
-}
-
-.forge-scroll::-webkit-scrollbar-thumb:hover {
-  background: #334e6e;
-}
-
-/* Crisp pixel art rendering */
-.pixelated {
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-}
-
-/* Tactical panel corner accent */
-.tactical-panel {
-  background: #0c1118;
-  border: 1px solid #1e2d40;
-  border-radius: 6px;
-}
-
-.tactical-card {
-  background: #111923;
-  border: 1px solid #1f2e40;
-  border-radius: 6px;
-}
-
-.safe-pb {
-  padding-bottom: max(0.35rem, var(--safe-bottom));
-}
-
-.safe-pt {
-  padding-top: var(--safe-top);
+  scrollbar-color: rgba(34, 211, 238, 0.35) transparent;
 }
