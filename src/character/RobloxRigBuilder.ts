@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
 export interface RigParts {
   root: THREE.Group;
@@ -45,7 +46,10 @@ function box(
   depth: number,
   material: THREE.Material | THREE.Material[],
 ): THREE.Mesh {
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material);
+  // Cantos arredondados estilo "blocky moderno" — raio proporcional à menor
+  // dimensão (o RoundedBoxGeometry já limita o raio a metade da menor face).
+  const radius = Math.min(width, height, depth) * 0.22;
+  const mesh = new THREE.Mesh(new RoundedBoxGeometry(width, height, depth, 2, radius), material);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   return mesh;
@@ -83,6 +87,25 @@ function createFaceTexture(): THREE.CanvasTexture {
     ctx.beginPath();
     ctx.roundRect(66, 94, 42, 26, 10);
     ctx.roundRect(148, 94, 42, 26, 10);
+    ctx.fill();
+
+    // Sobrancelhas
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#123047';
+    ctx.lineWidth = 9;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(62, 82);
+    ctx.lineTo(112, 76);
+    ctx.moveTo(144, 76);
+    ctx.lineTo(194, 82);
+    ctx.stroke();
+
+    // Bochechas
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.35)';
+    ctx.beginPath();
+    ctx.ellipse(58, 168, 20, 12, 0, 0, Math.PI * 2);
+    ctx.ellipse(198, 168, 20, 12, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Sorriso
@@ -151,6 +174,16 @@ export function buildRobloxRig(): RigParts {
     shoe.position.set(0, -legLength + legLength * 0.13, legWidth * 0.18);
     pivot.add(shoe);
 
+    // Joelheira frontal
+    const knee = box(legWidth * 0.92, legLength * 0.2, 0.07, shoeMaterial);
+    knee.position.set(0, -legLength * 0.42, legWidth * 0.56);
+    pivot.add(knee);
+
+    // Sola com brilho ciano
+    const sole = box(legWidth * 1.1, 0.035, legWidth * 1.54, trimMaterial);
+    sole.position.set(0, -legLength + 0.018, legWidth * 0.18);
+    pivot.add(sole);
+
     body.add(pivot);
     return pivot;
   };
@@ -179,6 +212,17 @@ export function buildRobloxRig(): RigParts {
   collar.position.y = torsoHeight * 0.94;
   torso.add(collar);
 
+  // Cinto escuro na base do tronco
+  const belt = box(torsoWidth * 1.02, torsoHeight * 0.13, torsoDepth * 1.04, standard(0x141d31, { roughness: 0.5 }));
+  belt.position.y = torsoHeight * 0.07;
+  torso.add(belt);
+
+  // Badge diamante emissivo no peito
+  const badge = new THREE.Mesh(new THREE.OctahedronGeometry(0.07), trimMaterial);
+  badge.position.set(0, torsoHeight * 0.8, torsoDepth / 2 + 0.02);
+  badge.castShadow = true;
+  torso.add(badge);
+
   // ----- Braços (pivô no ombro) -----
   const buildArm = (side: 1 | -1): THREE.Group => {
     const pivot = new THREE.Group();
@@ -196,6 +240,11 @@ export function buildRobloxRig(): RigParts {
     shoulderPad.position.y = -armLength * 0.08;
     pivot.add(shoulderPad);
 
+    // Faixa ciano no antebraço
+    const band = box(armWidth * 1.1, armLength * 0.13, armWidth * 1.1, trimMaterial);
+    band.position.y = -armLength * 0.6;
+    pivot.add(band);
+
     body.add(pivot);
     return pivot;
   };
@@ -209,7 +258,7 @@ export function buildRobloxRig(): RigParts {
   body.add(head);
 
   const headMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(headSize, headSize, headSize),
+    new RoundedBoxGeometry(headSize, headSize, headSize, 2, headSize * 0.16),
     [headMaterial, headMaterial, headMaterial, headMaterial, faceMaterial, headMaterial],
   );
   headMesh.castShadow = true;
@@ -243,6 +292,16 @@ export function buildRobloxRig(): RigParts {
   antennaTip.castShadow = true;
   head.add(antennaTip);
 
+  // Fones laterais (ear pods)
+  const earPodGeometry = new RoundedBoxGeometry(0.06, headSize * 0.36, headSize * 0.52, 2, 0.03);
+  const earPodMaterial = standard(0x141d31, { roughness: 0.4, metalness: 0.3 });
+  for (const side of [-1, 1] as const) {
+    const earPod = new THREE.Mesh(earPodGeometry, earPodMaterial);
+    earPod.position.set(side * (headSize / 2 + 0.02), headSize * 0.02, 0);
+    earPod.castShadow = true;
+    head.add(earPod);
+  }
+
   // ----- Mochila -----
   const backpack = box(torsoWidth * 0.62, torsoHeight * 0.62, 0.16, standard(COLORS.backpack, { roughness: 0.5 }));
   backpack.position.set(0, torsoHeight * 0.5, -torsoDepth / 2 - 0.1);
@@ -268,6 +327,12 @@ export function buildRobloxRig(): RigParts {
   cape.rotation.y = Math.PI;
   cape.rotation.x = 0.12;
   torso.add(cape);
+
+  // Emblema diamante na capa
+  const capeEmblem = new THREE.Mesh(new THREE.OctahedronGeometry(0.06), trimMaterial);
+  capeEmblem.position.set(0, torsoHeight * 0.7, -torsoDepth / 2 - 0.1);
+  capeEmblem.castShadow = true;
+  torso.add(capeEmblem);
 
   // ----- Aura / anel de movimento -----
   const aura = new THREE.Mesh(

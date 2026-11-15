@@ -60,6 +60,8 @@ export class ParticleSystem {
   private readonly drag: Float32Array;
   private readonly baseAlpha: Float32Array;
   private cursor = 0;
+  /** Quantidade de partículas com vida restante — permite pular o update quando zerado. */
+  private alive = 0;
   private readonly geometry: THREE.BufferGeometry;
   private readonly material: THREE.ShaderMaterial;
   private readonly positionAttribute: THREE.BufferAttribute;
@@ -152,6 +154,8 @@ export class ParticleSystem {
   }
 
   update(dt: number): void {
+    // Sem partículas vivas (ou sistema desligado), pula loop e uploads de GPU.
+    if (!this.points.visible || this.alive === 0) return;
     const max = this.max;
     for (let index = 0; index < max; index += 1) {
       if (this.life[index] <= 0) {
@@ -159,6 +163,7 @@ export class ParticleSystem {
         continue;
       }
       this.life[index] -= dt;
+      if (this.life[index] <= 0) this.alive -= 1;
       const dragFactor = Math.max(0, 1 - this.drag[index] * dt);
       this.velocities[index * 3] *= dragFactor;
       this.velocities[index * 3 + 2] *= dragFactor;

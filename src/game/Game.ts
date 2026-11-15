@@ -7,7 +7,7 @@ import { InputController } from '../controls/InputController';
 import { buildLobbyMap, type LobbyMapResult } from '../world/LobbyMap';
 import { ParticleSystem } from './ParticleSystem';
 import { SfxSynth } from '../audio/SfxSynth';
-import { PLAYER_TUNING, SPAWN, type FrameStats, type GameSettings } from './types';
+import { PLAYER_TUNING, QUALITY_PRESETS, SPAWN, type FrameStats, type GameSettings } from './types';
 
 export class Game {
   private readonly container: HTMLElement;
@@ -41,6 +41,7 @@ export class Game {
   private fpsEma = 60;
   private msEma = 16.7;
   private statsTimer = 0;
+  private lastShadows = true;
 
   private readonly onResize = (): void => this.resize();
 
@@ -127,12 +128,30 @@ export class Game {
 
     this.renderer.shadowMap.enabled = settings.shadows;
     this.lobby.sun.castShadow = settings.shadows;
-    this.scene.traverse((object) => {
-      if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
-        const materials = Array.isArray(object.material) ? object.material : [object.material];
-        for (const material of materials) material.needsUpdate = true;
+
+    // Tamanho do shadow map conforme o preset de qualidade (descarta o mapa
+    // antigo para forçar a realocação na nova resolução).
+    const shadowMapSize = QUALITY_PRESETS[settings.quality].shadowMapSize;
+    const shadow = this.lobby.sun.shadow;
+    if (shadow.mapSize.x !== shadowMapSize) {
+      shadow.mapSize.set(shadowMapSize, shadowMapSize);
+      if (shadow.map) {
+        shadow.map.dispose();
+        shadow.map = null;
       }
-    });
+    }
+
+    // Só recompila os materiais quando as sombras ligam/desligam — recompilar
+    // a cada mudança de slider (FOV, sensibilidade etc.) causava stutters.
+    if (settings.shadows !== this.lastShadows) {
+      this.lastShadows = settings.shadows;
+      this.scene.traverse((object) => {
+        if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
+          const materials = Array.isArray(object.material) ? object.material : [object.material];
+          for (const material of materials) material.needsUpdate = true;
+        }
+      });
+    }
 
     this.particles.setEnabled(settings.particles);
     this.sfx.setVolume(settings.volume);
@@ -235,6 +254,9 @@ export class Game {
     }
 
     this.physics.setPlayerVelocity(newVx, newVy, newVz);
+    // Plataformas móveis/giratórias avançam antes do step para o jogador
+    // ser carregado pelo movimento kinematic.
+    this.lobby.preStep(time);
     this.physics.step(dt);
 
     const after = this.physics.getPlayerPosition();
@@ -264,6 +286,30 @@ export class Game {
       }
     }
     this.wasGrounded = afterGrounded;
+
+    // ----- Jump pads: impulso vertical ao pisar sobre a plataforma -----
+    for (const pad of this.lobby.jumpPads) {
+      const dx = after.x - pad.position.x;
+      const dz = after.z - pad.position.z;
+      const dy = after.y - pad.position.y;
+      if (dx * dx + dz * dz < pad.radius * pad.radius && Math.abs(dy) < 1.4 && afterVelocity.y < pad.power * 0.6) {
+        this.physics.setPlayerVelocity(afterVelocity.x, pad.power, afterVelocity.z);
+        this.sfx.jump();
+        if (this.settings.particles) {
+          this.particles.burst(new THREE.Vector3(pad.position.x, pad.position.y + 0.3, pad.position.z), {
+            count: 26,
+            color: 0x67e8f9,
+            color2: 0xffffff,
+            speed: 3,
+            up: 2.4,
+            size: 1.8,
+            life: 0.7,
+            gravity: 4,
+          });
+        }
+        break;
+      }
+    }
 
     // ----- Posição e orientação do personagem -----
     this.rig.root.position.set(after.x, after.y - PLAYER_FOOT_OFFSET, after.z);
@@ -372,6 +418,7 @@ export class Game {
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.onResize);
     this.cameraRig.dispose();
+    this.input.dispose();
     this.particles.dispose();
     this.physics.dispose();
     this.renderer.dispose();

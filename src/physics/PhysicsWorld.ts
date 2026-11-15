@@ -50,6 +50,37 @@ export class PhysicsWorld {
     return this.world.createCollider(desc);
   }
 
+  /**
+   * Cria uma plataforma kinematic (móvel/giratória) com colisor de caixa.
+   * Retorna corpo e colisor para animação e ativação/desativação.
+   */
+  createKinematicBox(
+    width: number,
+    height: number,
+    depth: number,
+    position: Vec3Like,
+    friction = 0.4,
+  ): { body: RAPIER.RigidBody; collider: RAPIER.Collider } {
+    const body = this.world.createRigidBody(
+      RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(position.x, position.y, position.z),
+    );
+    const collider = this.world.createCollider(
+      RAPIER.ColliderDesc.cuboid(width / 2, height / 2, depth / 2).setFriction(friction),
+      body,
+    );
+    return { body, collider };
+  }
+
+  /** Define a próxima posição de uma plataforma kinematic (chamado antes do step). */
+  setKinematicTranslation(body: RAPIER.RigidBody, x: number, y: number, z: number): void {
+    body.setNextKinematicTranslation({ x, y, z });
+  }
+
+  /** Define a próxima rotação de uma plataforma kinematic (chamado antes do step). */
+  setKinematicRotation(body: RAPIER.RigidBody, x: number, y: number, z: number, w: number): void {
+    body.setNextKinematicRotation({ x, y, z, w });
+  }
+
   /** Passo fixo determinístico com acumulador — estável em qualquer FPS. */
   step(dt: number): void {
     this.accumulator = Math.min(this.accumulator + dt, this.fixedStep * 8);
