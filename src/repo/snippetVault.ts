@@ -6,6 +6,7 @@ export type SnippetCategory =
   | 'Hardware & APIs'
   | 'Layout & UI'
   | 'Game Loop & Áudio'
+  | 'Stacks & Prompts IA'
   | 'Custom';
 
 export interface VaultSnippet {
@@ -33,6 +34,8 @@ const DB_VERSION = 1;
 const STORE_NAME = 'snippets';
 const FALLBACK_LS_KEY = 'arena-forge-vault-fallback-v1';
 const CUSTOM_SFX_LS_KEY = 'arena-forge-custom-sfx-v1';
+const SEED_VERSION_LS_KEY = 'arena-forge-seed-version';
+const CURRENT_SEED_VERSION = '2';
 
 export const DEFAULT_SNIPPETS: VaultSnippet[] = [
   {
@@ -368,6 +371,57 @@ export function bindFirstGestureAudioUnlock(): () => void {
   };
 }`,
   },
+  {
+    id: 'seed-stack-3d-prompt',
+    title: 'Stack 3D (Three.js + R3F + Rapier3D) — Prompt Arena AI',
+    category: 'Stacks & Prompts IA',
+    language: 'md',
+    tags: ['3d', 'threejs', 'rapier3d', 'r3f', 'prompt-ia'],
+    description:
+      'Prompt pronto para projetos 3D com Three.js, React Three Fiber, física WebAssembly Rapier3D, ruído orgânico e HUD.',
+    pinned: true,
+    createdAt: 1700000007000,
+    updatedAt: 1700000007000,
+    code: `# Prompt Base — Projeto 3D Completo (Arena AI)
+
+Antes de criar os arquivos, instale via npm:
+\`\`\`bash
+npm install three @types/three @dimforge/rapier3d-compat simplex-noise lucide-react
+# Opcional para cenas 3D declarativas em React:
+# npm install @react-three/fiber @react-three/drei
+\`\`\`
+
+> **Instrução para o Agente de IA:**
+> Antes de criar os arquivos, instale via npm: \`three @types/three @dimforge/rapier3d-compat simplex-noise lucide-react\`. Use **Three.js** para renderização 3D com sombras em tempo real, névoa volumétrica e iluminação dinâmica, **Rapier3D** (ou \`cannon-es\`) para toda a física/colisão real de jogador, veículos e projéteis, **simplex-noise** para terrenos procedurais e screen shake orgânico, e **lucide-react** para ícones táticos de HUD.`,
+  },
+  {
+    id: 'seed-stack-2d-prompt',
+    title: 'Stack 2D (Phaser 3 / Matter.js / PixiJS) — Prompt Arena AI',
+    category: 'Stacks & Prompts IA',
+    language: 'md',
+    tags: ['2d', 'phaser', 'matter-js', 'pixijs', 'prompt-ia'],
+    description:
+      'Prompt pronto para jogos 2D avançados com Phaser 3, física de corpo rígido Matter.js, PixiJS WebGL e partículas.',
+    pinned: true,
+    createdAt: 1700000008000,
+    updatedAt: 1700000008000,
+    code: `# Prompt Base — Projeto 2D Avançado (Arena AI)
+
+Antes de criar os arquivos, instale via npm a stack ideal para o projeto:
+\`\`\`bash
+# Framework completo 2D (cenas, câmera, tilemaps, toque mobile):
+npm install phaser simplex-noise lucide-react
+
+# Alternativa Canvas/React com física rígida 2D:
+# npm install matter-js @types/matter-js simplex-noise lucide-react
+
+# Alternativa WebGL ultrarrápida (partículas/shaders 60-120 FPS):
+# npm install pixi.js canvas-confetti lucide-react
+\`\`\`
+
+> **Instrução para o Agente de IA:**
+> Antes de criar os arquivos, instale via npm: \`phaser simplex-noise lucide-react\` (ou \`matter-js @types/matter-js\` se for usar Canvas/React). Use motor de física dedicado, sistema de partículas, controles multi-touch responsivos e câmera dinâmica com screen shake.`,
+  },
 ];
 
 function isIndexedDbAvailable(): boolean {
@@ -424,9 +478,43 @@ export async function listVaultSnippets(): Promise<VaultSnippet[]> {
 
     if (items.length === 0) {
       await seedDefaultSnippets(db);
+      try {
+        localStorage.setItem(SEED_VERSION_LS_KEY, CURRENT_SEED_VERSION);
+      } catch {
+        // Ignore
+      }
       db.close();
       return sortSnippets([...DEFAULT_SNIPPETS]);
     }
+
+    // One-time gentle migration for newly introduced default seeds
+    let seedVer: string | null = null;
+    try {
+      seedVer = localStorage.getItem(SEED_VERSION_LS_KEY);
+    } catch {
+      seedVer = CURRENT_SEED_VERSION;
+    }
+
+    if (seedVer !== CURRENT_SEED_VERSION) {
+      const existingIds = new Set(items.map((s) => s.id));
+      const missingSeeds = DEFAULT_SNIPPETS.filter((def) => !existingIds.has(def.id));
+      if (missingSeeds.length > 0) {
+        await new Promise<void>((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          for (const s of missingSeeds) store.put(s);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+        items.push(...missingSeeds);
+      }
+      try {
+        localStorage.setItem(SEED_VERSION_LS_KEY, CURRENT_SEED_VERSION);
+      } catch {
+        // Ignore
+      }
+    }
+
     db.close();
     return sortSnippets(items);
   } catch {

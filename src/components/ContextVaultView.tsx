@@ -54,6 +54,7 @@ type SubView = 'context' | 'vault';
 
 const CATEGORIES: Array<SnippetCategory | 'Todos'> = [
   'Todos',
+  'Stacks & Prompts IA',
   'PWA & Build',
   'Input & Touch',
   'Hardware & APIs',
