@@ -1,30 +1,61 @@
-# ARENA//FORGE
+# Arena Forge Obby — Mundo 3D estilo Roblox
 
-Bancada PWA tática mobile-first (`100vw × 100dvh`) em **React, TypeScript, Vite e Tailwind CSS** projetada para acelerar a criação de jogos e apps no GitHub com agentes de IA — funcionando **100% offline** com migração de dados via JSON.
+Aplicação web 3D multi-arquivos em **React + TypeScript + Vite + Tailwind CSS + Three.js + Rapier3D**: um lobby/obby estilo **Roblox (R15/blocky moderno)** com iluminação maximizada, animações procedurais, controles mobile/PC e painel de configurações de performance.
 
-## Módulos
-
-1. **Estúdio de Assets em Código Puro (`src/generators/`)**
-   - `sfxSynthesizer.ts` — Sintetizador procedural WebAudio com osciloscópio em tempo real, presets táticos (*Laser, Explosão, Moeda, Alerta de Radar, Clique UI, Motor/Zumbido*), exportação `.wav` (PCM 16-bit) e geração de função TypeScript autônoma `playSfx()`.
-   - `svgSpriteForge.ts` — Editor vetorial/pixel (`16×16` e `32×32`) com ferramentas geométricas (linha, retângulo, círculo, balde, simetria X/Y), paletas táticas/neon e exportação para `.png`, `.svg`, componente **React TSX** e código **Canvas 2D puro**.
-
-2. **Extrator de Vídeo para Storyboard & Inspetor Visual (`src/vision/`)**
-   - `videoStoryboarder.ts` — Carrega vídeos locais (`.mp4`, `.webm`), seleciona automática ou manualmente de 4 a 9 quadros-chave e renderiza uma única grade numerada (`2×2` ou `3×3`) comprimida em **WebP** ou **JPEG** leve.
-   - `paletteAndPromptExtractor.ts` — Extrai as 6 cores predominantes em HEX (quantização K-Means++ com preservação de acentos + pipeta por pixel) e gera especificação técnica de UI/estilo em **Markdown** pronta para colar no prompt.
-
-3. **Mapeador de Contexto & Biblioteca de Módulos (`src/repo/`)**
-   - `contextBuilder.ts` — Escaneia pastas (`webkitdirectory` / File System Access API) ou múltiplos arquivos, ignora `node_modules` e `.git`, gera árvore Unicode de pastas e extrai assinaturas de `interface`, `type`, `export function`, `class` e `enum` em Markdown.
-   - `snippetVault.ts` — Cofre persistido em **IndexedDB** com exportação/importação JSON e módulos pré-carregados (`vite-plugin-pwa`, Joystick Multi-Touch `PointerEvent`, Driver `WebBluetooth`, Layout `100dvh`, Game Loop Fixed-Timestep e WebAudio Mobile Unlock).
-
-4. **Ponte Rápida Celular ↔ PC (`src/transfer/qrBridge.ts`)**
-   - Gerador/leitor de QR Code offline (`qrcode` + `BarcodeDetector`/`jsQR`) e transferência direta via **WebRTC DataChannel** (com troca manual de código/QR compactado e sinalização local `BroadcastChannel`) para enviar prompts, códigos e storyboards sem nuvem.
-
-## Scripts
+## Rodando
 
 ```bash
 npm install
-npm run dev        # Servidor de desenvolvimento
-npm run typecheck  # Checagem estrita TypeScript
-npm test           # Testes unitários (Vitest)
-npm run build      # Build de produção + Service Worker PWA offline
+npm run dev        # servidor dev em 0.0.0.0:5173
+npm run build      # typecheck + build de produção
+npm run typecheck  # só verificação de tipos
 ```
+
+## Stack
+
+| Área | Lib |
+| --- | --- |
+| Renderização 3D (sombra PCFSoft, ACES tone mapping, FogExp2, céu procedural) | `three` + `@types/three` |
+| Física e colisão (cápsula do jogador, raycast de chão, coyote time, jump buffer) | `@dimforge/rapier3d-compat` |
+| Ícones do HUD | `lucide-react` |
+| Estilos | Tailwind CSS v4 (`@tailwindcss/vite`) |
+
+## Estrutura
+
+```
+src/
+├── App.tsx                  # orquestra boot, HUD, modal e Settings
+├── main.tsx
+├── index.css                # Tailwind + tokens + .glass-panel/.hud-button
+├── audio/SfxSynth.ts        # SFX procedural via WebAudio (sem arquivos externos)
+├── character/
+│   ├── RobloxRigBuilder.ts  # rig articulado R15 com pivôs, rosto/visor, capa, aura
+│   └── ProceduralAnimator.ts# idle/walk/run/jump/fall + squash & stretch
+├── controls/
+│   ├── InputController.ts   # WASD/setas/Espaço/Shift + joystick multi-touch
+│   └── CameraRig.ts         # 3ª pessoa orbital, zoom, colisão de câmera
+├── game/
+│   ├── Game.ts              # loop principal: física → animação → render
+│   ├── ParticleSystem.ts    # partículas GPU (burst, poeira, portais)
+│   ├── settings.ts          # presets + persistência localStorage
+│   └── types.ts             # GameSettings, QUALITY_PRESETS, tuning
+├── physics/PhysicsWorld.ts  # mundo Rapier, passo fixo 1/60, raycasts
+├── ui/
+│   ├── Hud.tsx              # overlay: stats, engrenagem, dicas/controles
+│   ├── Joystick.tsx         # joystick virtual flutuante (pointerId único)
+│   ├── TouchButtons.tsx     # botões Pular / Correr
+│   ├── PerformanceOverlay.tsx # FPS + latência de frame
+│   └── SettingsModal.tsx    # gráficos, tela/câmera, controles/áudio
+└── world/LobbyMap.ts        # spawn xadrez, escadas, rampa, mini-obby, portais
+```
+
+## Configurações (persistidas em `localStorage`)
+
+- **Gráficos:** qualidade Baixo/Médio/Alto/Ultra, pixel ratio 0.5x–2.0x, sombras dinâmicas, partículas, limitador de FPS (30/60/livre).
+- **Tela & câmera:** tela cheia (Fullscreen API), FOV 60–100°, sensibilidade, contador de FPS/ms.
+- **Controles & áudio:** volume dos SFX, tamanho e opacidade dos botões on-screen.
+
+## Controles
+
+- **PC:** `WASD`/setas mover · `Espaço` pular · `Shift` correr · arrastar com o mouse girar a câmera · roda = zoom.
+- **Mobile:** joystick flutuante à esquerda (multi-touch) · arrastar na metade direita para a câmera · pinça para zoom · botões **Pular** e **Correr** à direita.
